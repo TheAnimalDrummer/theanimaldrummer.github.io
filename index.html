@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>🎄 Weihnachts-Jeopardy 🎄</title>
+
+<style>
+:root {
+  --blue: #0a1e3f;
+  --gold: #ffd700;
+  --ice: #bfe9ff;
+  --red: #b11226;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #1e3c72, #0a1e3f);
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ❄️ Snow animation */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("https://i.imgur.com/6QJjYMe.png");
+  opacity: 0.15;
+  animation: snow 60s linear infinite;
+  pointer-events: none;
+}
+@keyframes snow {
+  from { background-position: 0 0; }
+  to { background-position: 0 2000px; }
+}
+
+header {
+  text-align: center;
+  padding: 20px;
+  font-size: 2rem;
+  color: var(--gold);
+  text-shadow: 0 0 15px #fff;
+}
+
+#board {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+
+.category {
+  background: linear-gradient(#123, #001);
+  padding: 15px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #000;
+}
+
+.cell {
+  background: linear-gradient(#004, #001);
+  color: var(--gold);
+  font-size: 1.8rem;
+  font-weight: bold;
+  padding: 25px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 10px;
+  box-shadow: inset 0 0 15px #000;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--ice);
+}
+
+.cell.used {
+  visibility: hidden;
+}
+
+img{
+  max-height: 600px;
+}
+
+/* Modal */
+#modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#modalContent {
+  background: linear-gradient(#123, #000);
+  padding: 30px;
+  border-radius: 20px;
+  width: 80%;
+  max-width: 800px;
+  text-align: center;
+  box-shadow: 0 0 30px var(--ice);
+}
+
+#questionMedia img {
+  max-width: 100%;
+  border-radius: 15px;
+}
+
+button {
+  background: var(--red);
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 5px;
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+/* Team Panel */
+#teams {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 10px;
+}
+
+.team {
+  background: #111;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #000;
+}
+
+#winner {
+  display: none;
+  text-align: center;
+  font-size: 3rem;
+  color: var(--gold);
+  animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px gold; }
+  to { text-shadow: 0 0 30px white; }
+}
+</style>
+</head>
+
+<body>
+
+<header>🎄 Weihnachts-Jeopardy 🎄</header>
+<div id="teams"></div>
+<div id="board"></div>
+
+<div id="winner">
+  🎉 Runde beendet 🎉<br><br>
+  <button onclick="nextRound()">➡️ Nächste Runde</button>
+</div>
+
+<div id="modal">
+  <div id="modalContent">
+    <div id="questionMedia"></div>
+    <h2 id="questionText"></h2>
+    <button onclick="showAnswer()">Antwort zeigen</button>
+    <div id="answerSection" style="display:none;">
+      <h3 id="answerText"></h3>
+      <p>Punkte vergeben an:</p>
+      <div id="teamButtons"></div>
+      <button onclick="closeModal()">Ohne Punkte</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+
+const gameData = {
+  rounds: [
+    {
+      points: [100,200,300, 400],
+      categories: [
+        {
+          name: "🎅 Weinachtslieder",
+          questions: [
+            { type:"text", q:"🔙🎄", a:"Last Christmas" },
+            { type:"sound", q:"Was ist das?", audio:"./thankgoditschristmas.wav", a:"Thank god its Christmas" },
+            { type:"text", q:"🧑‍🎄🛷🌃", a:"Santa Claus Is Coming to Town" },
+            { type:"text", q:"👇🎄", a:"Underneath the Tree" }
+          ]
+        },
+        {
+          name: "❄️ Weinachtsfilme",
+          questions: [
+            { type:"image", q:"Welcher Film ist das?", img:"https://cdn.prod.www.spiegel.de/images/00000000-0003-0004-0000-000001051730_w1200_r2_fpx50_fpy50.jpg", a:"Kevin – Allein zu Haus" },
+            { type:"text", q:"❄️👑", a:"Die Eiskönigin" },
+            { type:"image", q:"Welcher Film ist das?", img:"https://m.media-amazon.com/images/M/MV5BMTI3NzI1NzY4MF5BMl5BanBnXkFtZTcwMDQ0MjEzMw@@._V1_.jpg", a:"Der Polarexpress" },
+            { type:"image", q:"Welcher Film ist das?", a:"Skifahren" }
+
+          ]
+        },
+        {
+          name: "🌲 Weinachts-Allgemeinwissen",
+          questions: [
+            { type:"text", q:"Wer hat den modernen Weihnachtsmann (Santa Claus) inspiriert??", a:"Der heilige Nikolaus" },
+            { type:"text", q:"Woher kommt die heute geläufige darstellung des Weinachtsmanns?", a:"Coca-Cola" },
+            { type:"text", q:"Welche Nation führt das traditionellste Weihnachtsessen mit Gans oder Truthahn ein?", a:"Großbritannien" },
+            { type:"text", q:"Welches Land gilt als Ursprungsort des Weihnachtsbaums?", a:"Deutschland" },
+            
+          ]
+        }
+      ]
+    },
+    {
+      points: [100,200,300, 400],
+      categories: [
+        {
+          name: "🎅 Weinachtslieder",
+          questions: [
+            { type:"text", q:"⭕🎄", a:"O Tannenbaum" },
+            { type:"audio", q:"Was ist dieser Song?", audio:"haveyourselfamerrylittlechristmas.wav", a:"Have Yourself a Merry Little Christmas" },
+            { type:"text", q:"🤫🌙", a:"Stille Nacht" },
+            { type:"text", q:"1🐄, 1🐑", a:"Eine Muh, eine Mäh" }
+          ]
+        },
+        {
+          name: "❄️ Weinachtsfilme",
+          questions: [
+            { type:"image", q:"Welcher Film ist das?", img:"https://cdn.prod.www.spiegel.de/images/00000000-0003-0004-0000-000001051730_w1200_r2_fpx50_fpy50.jpg", a:"Kevin – Allein zu Haus" },
+            { type:"text", q:"❄️👑", a:"Die Eiskönigin" },
+            { type:"image", q:"Welcher Film ist das?", img:"https://m.media-amazon.com/images/M/MV5BMTI3NzI1NzY4MF5BMl5BanBnXkFtZTcwMDQ0MjEzMw@@._V1_.jpg", a:"Der Polarexpress" },
+            { type:"image", q:"Welcher Film ist das?", a:"Skifahren" }
+
+          ]
+        },
+        {
+          name: "🌲 Weinachts-Allgemeinwissen",
+          questions: [
+            { type:"text", q:"Wer hilft dem Weihnachtsmann, die Geschenke zu bringen?", a:"Elfen" },
+            { type:"text", q:"Welche Farbe hat Schnee?", a:"Weiß" },
+            { type:"text", q:"Beliebter Wintersport?", a:"Skifahren" },
+            { type:"text", q:"In welchem Jahrzehnt fand der erste Weihnachtsmarkt in Deutschland statt?", a:"1434(Dresdner Striezelmarkt)" },
+            
+          ]
+        }
+      ]
+    },
+  ]
+};
+
+/* ================= GAME LOGIC ================= */
+
+let roundIndex = 0;
+let teams = [];
+let scores = {};
+let currentQuestion = null;
+
+function setupTeams() {
+  teams = [];
+  scores = {};
+  const count = parseInt(prompt("Wie viele Teams?"));
+  for(let i=0;i<count;i++){
+    const name = prompt(`Name von Team ${i+1}`);
+    teams.push(name);
+    scores[name]=0;
+  }
+  renderTeams();
+}
+
+function renderTeams(){
+  const el=document.getElementById("teams");
+  el.innerHTML="";
+  teams.forEach(t=>{
+    const d=document.createElement("div");
+    d.className="team";
+    d.innerText=`${t}: ${scores[t]}`;
+    el.appendChild(d);
+  });
+}
+
+function renderBoard(){
+  const board=document.getElementById("board");
+  board.innerHTML="";
+  document.getElementById("winner").style.display="none";
+
+  const round=gameData.rounds[roundIndex];
+  board.style.gridTemplateColumns=`repeat(${round.categories.length},1fr)`;
+
+  round.categories.forEach(c=>{
+    const cat=document.createElement("div");
+    cat.className="category";
+    cat.innerText=c.name;
+    board.appendChild(cat);
+  });
+
+  round.points.forEach((p,i)=>{
+    round.categories.forEach(c=>{
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.innerText=p;
+      cell.onclick=()=>openQuestion(c.questions[i],p,cell);
+      board.appendChild(cell);
+    });
+  });
+}
+
+function openQuestion(q,points,cell){
+  // stop any previously playing audio before showing the new question
+  stopAllAudio();
+
+  currentQuestion={...q,points,cell};
+  document.getElementById("modal").style.display="flex";
+  document.getElementById("questionText").innerText=q.q;
+  document.getElementById("answerSection").style.display="none";
+
+  const media=document.getElementById("questionMedia");
+  media.innerHTML="";
+  if(q.type==="image"){
+    const img=document.createElement("img");
+    img.src=q.img;
+    media.appendChild(img);
+  }
+  if(q.type==="sound"){
+    const audio=document.createElement("audio");
+    audio.controls=true;
+    audio.src=q.audio;
+    media.appendChild(audio);
+  }
+}
+
+function showAnswer(){
+  document.getElementById("answerSection").style.display="block";
+  document.getElementById("answerText").innerText=currentQuestion.a;
+
+  const tb=document.getElementById("teamButtons");
+  tb.innerHTML="";
+  teams.forEach(t=>{
+    const b=document.createElement("button");
+    b.innerText=t;
+    b.onclick=()=>award(t);
+    tb.appendChild(b);
+  });
+}
+
+function award(team){
+  // stop any playing audio immediately when awarding points
+  stopAllAudio();
+
+  scores[team]+=currentQuestion.points;
+  currentQuestion.cell.classList.add("used");
+  closeModal();
+  renderTeams();
+  checkEnd();
+}
+
+function closeModal(){
+  // ensure audio is stopped when modal closes
+  stopAllAudio();
+  document.getElementById("modal").style.display="none";
+}
+
+function checkEnd(){
+  const unused=document.querySelectorAll(".cell:not(.used)");
+  if(unused.length===0){
+    document.getElementById("winner").style.display="block";
+  }
+}
+
+function nextRound(){
+  roundIndex=(roundIndex+1)%gameData.rounds.length;
+  setupTeams();
+  renderBoard();
+}
+
+/* ================= START ================= */
+
+setupTeams();
+renderBoard();
+
+// new helper to stop and rewind all audio elements
+function stopAllAudio(){
+  document.querySelectorAll("audio").forEach(a=>{
+    try{ a.pause(); a.currentTime = 0; }catch(e){}
+  });
+}
+</script>
+
+</body>
+</html>
