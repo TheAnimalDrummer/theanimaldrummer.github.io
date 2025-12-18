@@ -178,7 +178,7 @@ button:hover {
       <h3 id="answerText"></h3>
       <p>Punkte vergeben an:</p>
       <div id="teamButtons"></div>
-      <button onclick="closeModal()">Ohne Punkte</button>
+      <button onclick="noPoints()">Ohne Punkte</button>
     </div>
   </div>
 </div>
@@ -195,7 +195,7 @@ const gameData = {
           name: "🎅 Weinachtslieder",
           questions: [
             { type:"text", q:"🔙🎄", a:"Last Christmas" },
-            { type:"sound", q:"Was ist das?", audio:"./thankgoditschristmas.wav", a:"Thank god its Christmas" },
+            { type:"sound", q:"Was ist das?", audio:"https://theanimaldrummer.github.io/thankgoditschristmas.wav", a:"Thank god its Christmas" },
             { type:"text", q:"🧑‍🎄🛷🌃", a:"Santa Claus Is Coming to Town" },
             { type:"text", q:"👇🎄", a:"Underneath the Tree" }
           ]
@@ -229,7 +229,7 @@ const gameData = {
           name: "🎅 Weinachtslieder",
           questions: [
             { type:"text", q:"⭕🎄", a:"O Tannenbaum" },
-            { type:"audio", q:"Was ist dieser Song?", audio:"haveyourselfamerrylittlechristmas.wav", a:"Have Yourself a Merry Little Christmas" },
+            { type:"audio", q:"Was ist dieser Song?", audio:"https://theanimaldrummer.github.io/haveyourselfamerrylittlechristmas.wav", a:"Have Yourself a Merry Little Christmas" },
             { type:"text", q:"🤫🌙", a:"Stille Nacht" },
             { type:"text", q:"1🐄, 1🐑", a:"Eine Muh, eine Mäh" }
           ]
@@ -266,6 +266,11 @@ let teams = [];
 let scores = {};
 let currentQuestion = null;
 
+function noPoints(){
+  currentQuestion.cell.classList.add("used");
+  closeModal();
+}
+  
 function setupTeams() {
   teams = [];
   scores = {};
@@ -398,3 +403,4 @@ function stopAllAudio(){
 
 </body>
 </html>
+
